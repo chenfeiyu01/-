@@ -1,0 +1,5 @@
+{
+  "name": "React Poly - 大富翁",
+  "description": "一个基于 React 和 TypeScript 的单机版大富翁游戏。包含房产购买、收租、命运卡牌和简单的 AI 对手。",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>React Poly - 大富翁 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+SC:wght@400;700;900&display=swap');
+      
+      :root {
+        --bg-color: #cbeeff;
+      }
+
+      body {
+        font-family: 'Fredoka', 'Noto Sans SC', sans-serif;
+        background-color: var(--bg-color);
+        background-image: radial-gradient(circle at 50% 50%, #e0f7ff 0%, #a8e0ff 100%);
+        overflow: hidden; /* Prevent scrolling */
+        height: 100vh;
+        width: 100vw;
+        perspective: 1200px; /* Global 3D perspective */
+      }
+
+      /* Noise Texture for "Material" feel */
+      .bg-noise {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.06;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      #root {
+        height: 100%;
+        width: 100%;
+      }
+
+      /* Custom scrollbar for logs */
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* 3D Neo-brutalism utilities */
+      .neo-border {
+        border: 3px solid #1a1a1a;
+      }
+      
+      /* Hexagon Shape for Hextech Cards */
+      .clip-hex {
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      }
+
+      /* Tooltip Logic */
+      .has-tooltip:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .tooltip {
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.2s ease;
+      }
+
+      /* Animation classes */
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
+      }
+      
+      @keyframes float-delayed {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float-delayed {
+        animation: float-delayed 5s ease-in-out infinite;
+        animation-delay: 2s;
+      }
+
+      @keyframes flyMoney {
+        0% {
+          transform: translate(var(--sx), var(--sy)) scale(0.5) translateZ(0px);
+          opacity: 0;
+        }
+        20% {
+          opacity: 1;
+          transform: translate(var(--sx), var(--sy)) scale(1.5) translateZ(100px);
+        }
+        80% {
+           opacity: 1;
+        }
+        100% {
+          transform: translate(var(--ex), var(--ey)) scale(1) translateZ(0px);
+          opacity: 0;
+        }
+      }
+      
+      .flying-money {
+        position: fixed;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 9999;
+        font-weight: 900;
+        color: #16a34a; /* green-600 */
+        text-shadow: 2px 2px 0px #000, -1px -1px 0 #fff;
+        animation: flyMoney 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      /* 3D Building Blocks & Windows */
+      .building-block {
+         box-shadow: inset 0 -4px 0 rgba(0,0,0,0.1), 1px 1px 0 rgba(0,0,0,0.2);
+      }
+      
+      .building-windows {
+        background-image: 
+          linear-gradient(90deg, transparent 0%, transparent 40%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.15) 60%, transparent 60%),
+          linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
+        background-size: 6px 100%, 100% 4px;
+      }
+
+      @keyframes glow {
+        0%, 100% { box-shadow: 0 0 5px #fbbf24, 0 0 10px #fbbf24; }
+        50% { box-shadow: 0 0 20px #fbbf24, 0 0 30px #f59e0b; }
+      }
+      
+      .landmark-glow {
+        animation: glow 2s infinite;
+      }
+
+      @keyframes alertPulse {
+         0% { transform: scale(1); opacity: 1; }
+         50% { transform: scale(1.1); opacity: 0.8; }
+         100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-alert {
+          animation: alertPulse 1s infinite;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "peerjs": "https://esm.sh/peerjs@1.5.4?bundle-deps"
+  }
+}
+</script>
+</head>
+  <body>
+    <div class="bg-noise"></div>
+    <div id="root"></div>
+  </body>
+</html>
